@@ -9,8 +9,8 @@
 	 integer, parameter :: nx=500    ! X space resolotion  空间网格数
 	 integer, parameter :: nt=40     ! total time step number  总时间积分数(可修改)
 	 real, parameter :: dx=3.0 		 ! dx  空间格距长度(可修改)
-	 real, parameter :: dt=0.05		 ! dtime  时间步长(可修改)
-	 real, parameter :: C=3.0        ! speed  相速度(可修改)   
+	 real, parameter :: dt=1		 ! dtime  时间步长(可修改)
+	 real, parameter :: C=1.0        ! speed  相速度(可修改)   
 	 public :: FXqian,FXzhong,FXhou,mean1,mean2
 	 public :: nx,dt,nt,C,dx
 

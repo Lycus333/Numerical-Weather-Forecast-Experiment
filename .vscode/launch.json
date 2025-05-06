@@ -6,7 +6,7 @@
         "type": "cppdbg",
         "request": "launch",
         "args": [],
-        "program": "${fileDirname}/build/${fileBasenameNoExtension}.exe",
-        "cwd": "${fileDirname}/build"  
+        "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+        "cwd": "${fileDirname}"  
     }]
 }

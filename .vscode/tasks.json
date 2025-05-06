@@ -3,10 +3,10 @@
     "tasks": [{
         "label": "Compile Fortran",
         "type": "shell",
-        "command": "mkdir -p build && cd build && gfortran", 
+        "command": "gfortran", 
         "args": [
             "-g", "-Wall", 
-            "../${fileBasename}", 
+            "${file}",
             "-o", "${fileBasenameNoExtension}.exe"
         ],
         "options": {
