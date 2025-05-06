@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [{
+        "preLaunchTask": "Compile Fortran",
+        "name": "Fortran Launch",
+        "type": "cppdbg",
+        "request": "launch",
+        "args": [],
+        "program": "${fileDirname}/build/${fileBasenameNoExtension}.exe",
+        "cwd": "${fileDirname}/build"  
+    }]
+}

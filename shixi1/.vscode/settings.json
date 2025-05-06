@@ -1,0 +1,7 @@
+{
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "files.autoGuessEncoding": true,    "files.autoGuessEncodingMaxBytes": 4096,  // 扩大探测范围至4KB
+    "files.encoding": "utf8",               // 强制添加BOM头（[[18]](#__18)）
+    "files.trimTrailingWhitespace": false      // 避免保存时意外截断
+  }
+  
