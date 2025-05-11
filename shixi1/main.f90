@@ -8,9 +8,9 @@
      save
 	 integer, parameter :: nx=500    ! X space resolotion  空间网格数
 	 integer, parameter :: nt=40     ! total time step number  总时间积分数(可修改)
-	 real, parameter :: dx=3.0 		 ! dx  空间格距长度(可修改)
-	 real, parameter :: dt=1		 ! dtime  时间步长(可修改)
-	 real, parameter :: C=1.0        ! speed  相速度(可修改)   
+	 real, parameter :: dx=2.0 		 ! dx  空间格距长度(可修改)
+	 real, parameter :: dt=1.0		 ! dtime  时间步长(可修改)
+	 real, parameter :: C=3.0        ! speed  相速度(可修改)   
 	 public :: FXqian,FXzhong,FXhou,mean1,mean2
 	 public :: nx,dt,nt,C,dx
 
@@ -133,8 +133,8 @@
 	  !!!采用不同的空间差分方式求取数值解，并给输出数组的第三-六列赋值数值解
         do t=1,nt
           !call FXhou(Xnow,Xnowdt)       !!!!调用空间差分格式(需要修改，选择不同空间差分格式)
-		  call FXqian(Xnow,Xnowdt)
-		  !call FXzhong(Xnow,Xnowdt)
+		  !call FXqian(Xnow,Xnowdt)
+		  call FXzhong(Xnow,Xnowdt)
 
 			Xnow=Xnow+Xnowdt*dt            !!!!时间差分格式为前差格式
 		  do i=1,nx

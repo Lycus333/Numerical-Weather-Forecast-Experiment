@@ -12,10 +12,10 @@ with open("result.txt", "r") as f:
     first_line = f.readline().strip()  # 去除首尾空格和换行符
 # 加载数据（跳过第一行）
 data = np.loadtxt("result.txt", skiprows=1)
-x = data[0:800, 0]
-u0 = data[0:800, 1]
-u = data[0:800, 2]
-u_analytic = data[0:800, 6]
+x = data[200:800, 0]
+u0 = data[200:800, 1]
+u = data[200:800, 2]
+u_analytic = data[200:800, 6]
 # ======================================================================
 # 可视化（修改标题部分）
 # ======================================================================
@@ -25,13 +25,10 @@ plt.plot(x, u, 'r-', lw=2, label='Analytic')
 plt.plot(x, u_analytic, 'b--', label='Numerical')
 plt.xlabel('x')
 plt.ylabel('u')
-plt.title(f'时间前插 空间前插 | 参数: {first_line}')  # 添加第一行内容
+plt.title(f'时间前插 空间中央差 | 参数: {first_line}')  # 添加第一行内容
 plt.legend()
 plt.grid(alpha=0.3)
 plt.show()
-
-
-
 
 
 
@@ -46,7 +43,5 @@ plt.show()
 # import matplotlib.pyplot as plt
 # plt.plot([1,2,3])
 # plt.show()
-
-# # %%
 
 # %%
