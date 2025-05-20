@@ -22,7 +22,7 @@ c      zo是为了减小重力惯性外波的波速，增加差分格式的稳定性而引入的位势高度。
       c1=dt/2.0
       c2=dt*2.0
 c  为便于Grads做图而建立的位势高度场数据文件h.grd（包括初始场和预报场）    
-      open(10,file='h.grd',form='binary')         
+      open(10,file='h.grd',form='unformatted')         
 
 c  计算放大系数和地转参数,并写入数据文件中
       call cmf(rm,f,d,cla,m,n)
@@ -53,6 +53,8 @@ c      close(4)
 c      open(5,file='va.dat',status='new')
 c      write(5,104) va
 c      close(5)
+
+c 加入地转风子程序后以下注释，以上启用
       open(4,file='ua.dat',status='old')
       read(4,104) ua
       close(4)
@@ -231,9 +233,42 @@ c     time smoothimg
 
 c     space smoothing for internal points 区域内5点平滑(正逆平滑)
 c   请同学编写区域内5点平滑(正逆平滑)的子程序！！！应用书中（4.126）式
-c   注：此程序必须设计成开关形式，保证既可选做正逆平滑，又可选做正平滑   l=1为只执行正平滑，l=2为执行正逆平滑.
-c      subroutine ssip(a,w,s,m,n, l)
+c   注：此程序必须设计成开关形式，保证既可选做正逆平滑，又可选做正平滑   l=1为只执行正平滑，l=2为执行正逆平滑.    
+      subroutine ssip(a,w,s,m,n, l)
+c     space smoothing for internal points 区域内5点平滑(正逆平滑)
 
+      dimension a(m,n),w(m,n)
+      m1=m-1
+      n1=n-1
+c     执行正平滑
+      do 10 i=2,m1
+      do 10 j=2,n1
+      w(i,j)=a(i,j)*(1.0-s)+s/4.0*(a(i-1,j)+a(i+1,j)+a(i,j-1)+a(i,j+1))
+  10  continue
+
+c     将正平滑结果传回原数组
+      do 20 i=2,m1
+      do 20 j=2,n1
+      a(i,j)=w(i,j)
+  20  continue
+      
+c     如果l=2，执行逆平滑
+      if(l.eq.2) then
+c       执行逆平滑
+        do 30 i=2,m1
+        do 30 j=2,n1
+        temp = s/4.0*(a(i-1,j)+a(i+1,j)+a(i,j-1)+a(i,j+1))
+        w(i,j) = a(i,j)*(1.0+s) - temp
+  30    continue
+        
+c       将逆平滑结果传回原数组
+        do 40 i=2,m1
+        do 40 j=2,n1
+        a(i,j)=w(i,j)
+  40    continue
+      endif
+      return
+      end
 
 c     space smoothing for boundary points 边界九点平滑
       subroutine ssbp(a,w,s,m,n)
