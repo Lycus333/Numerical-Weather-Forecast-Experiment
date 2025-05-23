@@ -5,6 +5,31 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
 import os
+from matplotlib import font_manager
+
+
+# 设置中文字体
+try:
+    # 方法1：使用SimHei字体（如果系统中有）
+    plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文
+    plt.rcParams['axes.unicode_minus'] = False    # 正常显示负号
+    print("已设置SimHei作为默认中文字体")
+except:
+    # 方法2：尝试使用其他可能的中文字体
+    chinese_fonts = ['Microsoft YaHei', 'SimSun', 'KaiTi', 'FangSong', 
+                    'STSong', 'STZhongsong', 'STFangsong']
+    font_found = False
+    for font in chinese_fonts:
+        if any(f.name == font for f in font_manager.fontManager.ttflist):
+            plt.rcParams['font.sans-serif'] = [font]
+            plt.rcParams['axes.unicode_minus'] = False
+            print(f"已设置{font}作为默认中文字体")
+            font_found = True
+            break
+    
+    if not font_found:
+        print("警告：未找到中文字体，图表标题可能显示不正确")
+
 
 # 定义数据参数（来自CTL文件的信息）
 nx = 20  # X方向格点数
@@ -20,19 +45,47 @@ lats = np.array([y_start + j * y_step for j in range(ny)])
 lon_grid, lat_grid = np.meshgrid(lons, lats)
 
 def read_binary_data(filepath):
-
     try:
-        # 假设数据是32位浮点型，按照FORTRAN存储顺序（先经度后纬度）
-        data = np.fromfile(filepath, dtype=np.float32)
+        # 打印文件大小以便调试
+        file_size = os.path.getsize(filepath)
+        print(f"文件大小: {file_size} 字节")
+        print(f"预期数据大小: {2 * ny * nx * 4} 字节 (2个时间点, {ny}×{nx}网格, 4字节/float32)")
+        
+        # 读取整个文件
+        with open(filepath, 'rb') as f:
+            # 方案1: 假设前4个字节是头信息
+            data_with_header = np.fromfile(f, dtype=np.float32)
+            if len(data_with_header) == 2 * ny * nx + 1:  # 多1个float32值(4字节)
+                print("检测到头信息或额外数据，跳过第一个值")
+                data = data_with_header[1:]  # 跳过第一个值
+            else:
+                # 方案2: 尝试直接读取精确字节数
+                f.seek(0)  # 回到文件开头
+                data = np.fromfile(f, dtype=np.float32, count=2*ny*nx)
+        
+        print(f"读取数据形状: {data.shape}")
         
         # 重塑为二维数组，2表示有两个时间点
         data = data.reshape(2, ny, nx)
+        data = data[:, ::-1, :]  # 沿纬度方向翻转数据
         
-        # 转置以匹配经纬度网格
         return data
     except Exception as e:
         print(f"读取数据错误: {e}")
-        return None
+        print("尝试进行替代解析...")
+        
+        try:
+            # 尝试另一种读取方式：精确读取所需字节数
+            with open(filepath, 'rb') as f:
+                # 跳过前4个字节
+                f.seek(4)
+                data = np.fromfile(f, dtype=np.float32, count=2*ny*nx)
+                data = data.reshape(2, ny, nx)
+                print("使用替代方法成功读取数据")
+                return data
+        except Exception as e2:
+            print(f"替代解析也失败: {e2}")
+            return None
 
 def plot_height_field(data, time_idx, title, output_file):
 

@@ -270,6 +270,7 @@ c       将逆平滑结果传回原数组
       return
       end
 
+
 c     space smoothing for boundary points 边界九点平滑
       subroutine ssbp(a,w,s,m,n)
       dimension a(m,n),w(m,n)
