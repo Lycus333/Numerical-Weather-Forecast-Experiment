@@ -44,49 +44,38 @@ lons = np.array([x_start + i * x_step for i in range(nx)])
 lats = np.array([y_start + j * y_step for j in range(ny)])
 lon_grid, lat_grid = np.meshgrid(lons, lats)
 
+#下面的函数设置需要重点考虑“Fortran使用form='unformatted'写入二进制文件时会在每个记录前后添加记录标记(record markers)，这些标记通常是4字节整数，保存记录长度信息。
+#1. ”先读取4字节记录标记（不使用它，但必须读取以跳过）
+#2.读取初始场数据并正确重塑为(ny,nx)格式
+#3.跳过8字节（尾部记录标记4字节+第二条记录的头部标记4字节）
+#4.读取预报场数据并重塑
+#5.将两个场组合成所需的数组格式
+#这种方法能够正确处理Fortran的二进制记录格式，避免数据错位问题。这也与CTL文件中的XDEF和YDEF定义保持一致，确保地图绘制正确。
+
 def read_binary_data(filepath):
     try:
-        # 打印文件大小以便调试
-        file_size = os.path.getsize(filepath)
-        print(f"文件大小: {file_size} 字节")
-        print(f"预期数据大小: {2 * ny * nx * 4} 字节 (2个时间点, {ny}×{nx}网格, 4字节/float32)")
-        
-        # 读取整个文件
         with open(filepath, 'rb') as f:
-            # 方案1: 假设前4个字节是头信息
-            data_with_header = np.fromfile(f, dtype=np.float32)
-            if len(data_with_header) == 2 * ny * nx + 1:  # 多1个float32值(4字节)
-                print("检测到头信息或额外数据，跳过第一个值")
-                data = data_with_header[1:]  # 跳过第一个值
-            else:
-                # 方案2: 尝试直接读取精确字节数
-                f.seek(0)  # 回到文件开头
-                data = np.fromfile(f, dtype=np.float32, count=2*ny*nx)
-        
-        print(f"读取数据形状: {data.shape}")
-        
-        # 重塑为二维数组，2表示有两个时间点
-        data = data.reshape(2, ny, nx)
-        data = data[:, ::-1, :]  # 沿纬度方向翻转数据
-        
-        return data
+            # 读取记录标记以确定数据大小
+            header = np.fromfile(f, dtype=np.int32, count=1)[0]
+            # 读取初始场数据
+            initial_data = np.fromfile(f, dtype=np.float32, count=nx*ny)
+            initial_data = initial_data.reshape(ny, nx)
+            
+            # 跳过尾部记录标记和第二条记录的头部记录标记
+            f.seek(8, 1)
+            # 读取预报场数据
+            forecast_data = np.fromfile(f, dtype=np.float32, count=nx*ny)
+            forecast_data = forecast_data.reshape(ny, nx)
+            # 构建最终数据数组
+            data = np.zeros((2, ny, nx), dtype=np.float32)
+            data[0] = initial_data
+            data[1] = forecast_data
+            
+            return data
+            
     except Exception as e:
-        print(f"读取数据错误: {e}")
-        print("尝试进行替代解析...")
-        
-        try:
-            # 尝试另一种读取方式：精确读取所需字节数
-            with open(filepath, 'rb') as f:
-                # 跳过前4个字节
-                f.seek(4)
-                data = np.fromfile(f, dtype=np.float32, count=2*ny*nx)
-                data = data.reshape(2, ny, nx)
-                print("使用替代方法成功读取数据")
-                return data
-        except Exception as e2:
-            print(f"替代解析也失败: {e2}")
-            return None
-
+        print(f"读取错误: {e}")
+        return None
 def plot_height_field(data, time_idx, title, output_file):
 
     # 创建图形和坐标系
