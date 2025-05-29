@@ -46,22 +46,22 @@ c  为便于做图,将初始数据资料写入二进制数据文件h.grd中
 
 ccccccccccccccccccccccc加入地转风子程序后此处需要修改cccccccccccccccccccccccccc
 c  计算地转风初值   
-c      call cgw(ua,va,za,rm,f,d,m,n)
-c      open(4,file='ua.dat',status='new')
-c      write(4,104) ua
-c      close(4)
-c      open(5,file='va.dat',status='new')
-c      write(5,104) va
-c      close(5)
+      call cgw(ua,va,za,rm,f,d,m,n)
+      open(4,file='ua.dat',status='new')
+      write(4,104) ua
+      close(4)
+      open(5,file='va.dat',status='new')
+      write(5,104) va
+      close(5)
 
 c 加入地转风子程序后以下注释，以上启用
-      open(4,file='ua.dat',status='old')
-      read(4,104) ua
-      close(4)
-      open(5,file='va.dat',status='old')
-      read(5,104) va
-      close(5)
- 104  format(20f10.5)
+c      open(4,file='ua.dat',status='old')
+c     read(4,104) ua
+c      close(4)
+c      open(5,file='va.dat',status='old')
+c      read(5,104) va
+c      close(5)
+c 104  format(20f10.5)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 c   边值传送子程序
@@ -183,6 +183,64 @@ c     computing geostrophic winds
 c   请同学编写地转风初值的子程序！！！应用书中（4.134）式，要求:能用中央差的地方一定要用中央差!
 c      subroutine cgw(ua,va,za,rm,f,d,m,n)
 
+      dimension ua(m,n),va(m,n),za(m,n),rm(m,n),f(m,n)
+      
+c     定义重力加速度常数
+      g = 9.8
+c     定义网格边界
+      m1 = m-1
+      n1 = n-1
+      
+c     内部点计算 - 使用中央差分
+      do 10 i=2,m1
+      do 10 j=2,n1
+c       u分量 = -放大系数*重力/科氏力*位势高度y方向导数
+        ua(i,j) = -rm(i,j)*g*(za(i,j+1)-za(i,j-1))/(2.0*d*f(i,j))
+c       v分量 = 放大系数*重力/科氏力*位势高度x方向导数
+        va(i,j) = rm(i,j)*g*(za(i+1,j)-za(i-1,j))/(2.0*d*f(i,j))
+10    continue
+      
+c     左右边界点计算 (i=1和i=m)
+      do 20 j=2,n1
+c       左边界：u用中央差，v用前向差
+        ua(1,j) = -rm(1,j)*g*(za(1,j+1)-za(1,j-1))/(2.0*d*f(1,j))
+        va(1,j) = rm(1,j)*g*(za(2,j)-za(1,j))/(d*f(1,j))
+        
+c       右边界：u用中央差，v用后向差
+        ua(m,j) = -rm(m,j)*g*(za(m,j+1)-za(m,j-1))/(2.0*d*f(m,j))
+        va(m,j) = rm(m,j)*g*(za(m,j)-za(m-1,j))/(d*f(m,j))
+20    continue
+      
+c     上下边界点计算 (j=1和j=n)
+      do 30 i=2,m1
+c       下边界：u用前向差，v用中央差
+        ua(i,1) = -rm(i,1)*g*(za(i,2)-za(i,1))/(d*f(i,1))
+        va(i,1) = rm(i,1)*g*(za(i+1,1)-za(i-1,1))/(2.0*d*f(i,1))
+        
+c       上边界：u用后向差，v用中央差
+        ua(i,n) = -rm(i,n)*g*(za(i,n)-za(i,n-1))/(d*f(i,n))
+        va(i,n) = rm(i,n)*g*(za(i+1,n)-za(i-1,n))/(2.0*d*f(i,n))
+30    continue
+      
+c     四个角点计算 - 使用单侧差分
+c     左下角
+      ua(1,1) = -rm(1,1)*g*(za(1,2)-za(1,1))/(d*f(1,1))
+      va(1,1) = rm(1,1)*g*(za(2,1)-za(1,1))/(d*f(1,1))
+      
+c     右下角
+      ua(m,1) = -rm(m,1)*g*(za(m,2)-za(m,1))/(d*f(m,1))
+      va(m,1) = rm(m,1)*g*(za(m,1)-za(m-1,1))/(d*f(m,1))
+      
+c     左上角
+      ua(1,n) = -rm(1,n)*g*(za(1,n)-za(1,n-1))/(d*f(1,n))
+      va(1,n) = rm(1,n)*g*(za(2,n)-za(1,n))/(d*f(1,n))
+      
+c     右上角
+      ua(m,n) = -rm(m,n)*g*(za(m,n)-za(m,n-1))/(d*f(m,n))
+      va(m,n) = rm(m,n)*g*(za(m,n)-za(m-1,n))/(d*f(m,n))
+      
+      return
+      end
 
 c     time integrations
       subroutine ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,dt,zo,m,n)
