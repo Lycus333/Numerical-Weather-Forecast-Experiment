@@ -125,7 +125,7 @@ def plot_height_field(data, time_idx, title, output_file):
 
 def main():
     # 设置工作目录，可以根据需要修改
-    data_dir = os.path.expanduser("C:/Users/UNGIFTED/Desktop/shuzhi/shuzhitianqishixi/shixi3")
+    data_dir = os.path.expanduser("C:/Users/UNGIFTED/Desktop/shuzhi/shuzhitianqishixi/shixi3.2")
     data_file = os.path.join(data_dir, "h.grd")
     
     # 读取数据

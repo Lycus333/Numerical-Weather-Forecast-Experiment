@@ -26,11 +26,11 @@ c  为便于Grads做图而建立的位势高度场数据文件h.grd（包括初始场和预报场）
 
 c  计算放大系数和地转参数,并写入数据文件中
       call cmf(rm,f,d,cla,m,n)
-      open(1,file='rm.dat',status='new')
+      open(1,file='rm.dat',status='replace')
        write(1,101) rm
       close(1)
  101  format(20f10.5)
-      open(1,file='f.dat',status='new')
+      open(1,file='f.dat',status='replace')
        write(1,103) f
 	close(1)
  103  format(20e15.5)
@@ -47,13 +47,13 @@ c  为便于做图,将初始数据资料写入二进制数据文件h.grd中
 ccccccccccccccccccccccc加入地转风子程序后此处需要修改cccccccccccccccccccccccccc
 c  计算地转风初值   
       call cgw(ua,va,za,rm,f,d,m,n)
-      open(4,file='ua.dat',status='new')
+      open(4,file='ua.dat',status='replace')
       write(4,104) ua
       close(4)
-      open(5,file='va.dat',status='new')
+      open(5,file='va.dat',status='replace')
       write(5,104) va
       close(5)
-
+ 104  format(20f10.5) 
 c 加入地转风子程序后以下注释，以上启用
 c      open(4,file='ua.dat',status='old')
 c     read(4,104) ua
@@ -129,14 +129,14 @@ c  数组传送,为后12小时的积分做准备
   10  call ta(ua,va,za,uc,vc,zc,m,n)
 
 c  存放预报结果
-      open(6,file='zc.dat',status='new')
+      open(6,file='zc.dat',status='replace')
       write(6,102) zc
       close(6)
 	write(10) ((zc(i,j),i=1,m),j=1,n)    
-	open(7,file='uc.dat',status='new')
+	open(7,file='uc.dat',status='replace')
       write(7,104) uc
       close(7)
-      open(8,file='vc.dat',status='new')
+      open(8,file='vc.dat',status='replace')
       write(8,104) vc
       close(8)
       stop
@@ -181,7 +181,7 @@ c  求放大系数rm和柯氏参数f
 
 c     computing geostrophic winds
 c   请同学编写地转风初值的子程序！！！应用书中（4.134）式，要求:能用中央差的地方一定要用中央差!
-c      subroutine cgw(ua,va,za,rm,f,d,m,n)
+      subroutine cgw(ua,va,za,rm,f,d,m,n)
 
       dimension ua(m,n),va(m,n),za(m,n),rm(m,n),f(m,n)
       
