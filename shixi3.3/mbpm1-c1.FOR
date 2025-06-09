@@ -79,9 +79,9 @@ c   欧拉后差积分1小时
   20  continue
 
 c   边界平滑子程序
-      call ssbp(za,w,s,m,n)
-      call ssbp(ua,w,s,m,n)
-      call ssbp(va,w,s,m,n)
+c      call ssbp(za,w,s,m,n)
+c      call ssbp(ua,w,s,m,n)
+c      call ssbp(va,w,s,m,n)
 
 c   前差积分半步
       call ti(ua,va,za,ua,va,za,ub,vb,zb,rm,f,d,c1,zo,m,n)
@@ -99,11 +99,11 @@ c  打印积分步数,na大循环步,nb小循环步
 c  判断是否积分12小时
        if(nb.eq.nt2) go to 80
 c  判断是否做边界平滑
-       if(nb/nt4*nt4.eq.nb) go to 40
-       go to 50
-  40   call ssbp(zc,w,s,m,n)
-       call ssbp(uc,w,s,m,n)
-       call ssbp(vc,w,s,m,n)
+c       if(nb/nt4*nt4.eq.nb) go to 40
+c       go to 50
+c  40   call ssbp(zc,w,s,m,n)
+c       call ssbp(uc,w,s,m,n)
+c       call ssbp(vc,w,s,m,n)
 
 c  判断是否做时间平滑
   50   if(nb.eq.nt5) go to 60
@@ -181,8 +181,7 @@ c  求放大系数rm和柯氏参数f
 
 c     computing geostrophic winds
 c   请同学编写地转风初值的子程序！！！应用书中（4.134）式，要求:能用中央差的地方一定要用中央差!
-c   这里改成cgw1，我将使用另外的差分格式cgw在下方
-      subroutine cgw1(ua,va,za,rm,f,d,m,n)
+      subroutine cgw(ua,va,za,rm,f,d,m,n)
 
       dimension ua(m,n),va(m,n),za(m,n),rm(m,n),f(m,n)
       
@@ -227,84 +226,21 @@ c     四个角点计算 - 使用单侧差分
 c     左下角
       ua(1,1) = -rm(1,1)*g*(za(1,2)-za(1,1))/(d*f(1,1))
       va(1,1) = rm(1,1)*g*(za(2,1)-za(1,1))/(d*f(1,1))
+      
 c     右下角
       ua(m,1) = -rm(m,1)*g*(za(m,2)-za(m,1))/(d*f(m,1))
       va(m,1) = rm(m,1)*g*(za(m,1)-za(m-1,1))/(d*f(m,1))
+      
 c     左上角
       ua(1,n) = -rm(1,n)*g*(za(1,n)-za(1,n-1))/(d*f(1,n))
       va(1,n) = rm(1,n)*g*(za(2,n)-za(1,n))/(d*f(1,n))
+      
 c     右上角
       ua(m,n) = -rm(m,n)*g*(za(m,n)-za(m,n-1))/(d*f(m,n))
       va(m,n) = rm(m,n)*g*(za(m,n)-za(m-1,n))/(d*f(m,n))
       
       return
       end
-
-c     computing geostrophic winds - 使用前一阶导数差分方法
-      subroutine cgw(ua,va,za,rm,f,d,m,n)
-
-      dimension ua(m,n),va(m,n),za(m,n),rm(m,n),f(m,n)
-      
-c     定义重力加速度常数
-      g = 9.8
-c     定义网格边界
-      m1 = m-1
-      n1 = n-1
-      
-c     内部点计算 - 使用前后向差分组合
-      do 10 i=1,m1
-      do 10 j=1,n1
-c       u分量使用前向差分计算y方向导数
-        ua(i,j) = -rm(i,j)*g*(za(i,j+1)-za(i,j))/(d*f(i,j))
-c       v分量使用后向差分计算x方向导数
-        va(i,j) = rm(i,j)*g*(za(i,j)-za(i-1,j))/(d*f(i,j))
-10    continue
-      
-c     特殊处理最上边界点 (j=n) - 全部使用后向差分
-      do 20 i=1,m1
-c       u分量使用后向差分计算y方向导数
-        ua(i,n) = -rm(i,n)*g*(za(i,n)-za(i,n-1))/(d*f(i,n))
-c       v分量使用后向差分计算x方向导数
-        va(i,n) = rm(i,n)*g*(za(i,n)-za(i-1,n))/(d*f(i,n))
-20    continue
-      
-c     特殊处理最右边界点 (i=m) - 使用混合差分
-      do 30 j=1,n1
-c       u分量使用前向差分计算y方向导数
-        ua(m,j) = -rm(m,j)*g*(za(m,j+1)-za(m,j))/(d*f(m,j))
-c       v分量使用后向差分计算x方向导数
-        va(m,j) = rm(m,j)*g*(za(m,j)-za(m-1,j))/(d*f(m,j))
-30    continue
-      
-c     特殊处理右上角点 (m,n) - 全部使用后向差分
-      ua(m,n) = -rm(m,n)*g*(za(m,n)-za(m,n-1))/(d*f(m,n))
-      va(m,n) = rm(m,n)*g*(za(m,n)-za(m-1,n))/(d*f(m,n))
-      
-c     对第一行和第一列特殊处理，应用迎风格式
-      do 40 j=1,n
-c       第一列处理 - i=1
-        if (j.lt.n) then
-c         使用前向差分计算y方向导数
-          ua(1,j) = -rm(1,j)*g*(za(1,j+1)-za(1,j))/(d*f(1,j))
-        else
-c         顶部角点使用后向差分
-          ua(1,n) = -rm(1,n)*g*(za(1,n)-za(1,n-1))/(d*f(1,n))
-        endif
-c       由于i=1无法使用后向差分，改用前向差分计算v分量
-        va(1,j) = rm(1,j)*g*(za(2,j)-za(1,j))/(d*f(1,j))
-40    continue
-      
-c     对网格间隔进行损耗处理，增加数值粘性
-      do 50 i=1,m
-      do 50 j=1,n
-c       添加5%的人工阻尼以增加计算稳定性
-        ua(i,j) = 0.95*ua(i,j)
-        va(i,j) = 0.95*va(i,j)
-50    continue
-      
-      return
-      end
-
 
 c     time integrations
       subroutine ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,dt,zo,m,n)

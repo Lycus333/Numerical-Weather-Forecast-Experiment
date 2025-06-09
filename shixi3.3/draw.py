@@ -134,12 +134,12 @@ def main():
         return
     
     # 绘制初始场
-    plot_height_field(data, 0, "500hPa高度场 - 初始场 (1973-04-29 00Z)", 
-                     os.path.join(data_dir, "initialh.png"))
+    plot_height_field(data, 0, "c不做内点平滑-500hPa高度场 - 初始场 (1973-04-29 00Z)", 
+                     os.path.join(data_dir, "c2-initialh.png"))
     
     # 绘制预报场
-    plot_height_field(data, 1, "500hPa高度场 - 24小时预报 (1973-04-30 00Z)", 
-                     os.path.join(data_dir, "predicth.png"))
+    plot_height_field(data, 1, "c不做内点平滑-500hPa高度场 - 24小时预报 (1973-04-30 00Z)", 
+                     os.path.join(data_dir, "c2-predicth.png"))
     
     print("处理完成!")
 
