@@ -10,7 +10,16 @@ c      na用于控制12小时的预报；nb用于记录时间积分步数；nt2=72用于判别
 c      是否积分12小时，是否该做内点平滑；nt4=6用于判定是否该做边界平滑；
 c      nt5用于判定是否该做时间平滑。 
 c      zo是为了减小重力惯性外波的波速，增加差分格式的稳定性而引入的位势高度。
+
+c     新版子程序 t i 增加参数 scheme，取值：
+c       scheme = 1  欧拉后差格式
+c       scheme = 2  中央差格式
+c       scheme = 3  欧拉后差与中央差平均格式
+
+
       program shen2
+
+      integer, parameter :: scheme = 3
 	parameter(m=20,n=16,d=300000.0,cla=51.0,clo=118.0,dt=600.0)
       dimension ua(m,n),va(m,n),za(m,n),ub(m,n),vb(m,n),zb(m,n),
      *		uc(m,n),vc(m,n),zc(m,n),rm(m,n),f(m,n),w(m,n)
@@ -73,8 +82,8 @@ c   开始预报
        nb=0
 c   欧拉后差积分1小时
       do 20 nn=1,6
-       call ti(ua,va,za,ua,va,za,ub,vb,zb,rm,f,d,dt,zo,m,n)
-       call ti(ua,va,za,ub,vb,zb,ua,va,za,rm,f,d,dt,zo,m,n)
+       call ti(ua,va,za,ua,va,za,ub,vb,zb,rm,f,d,dt,zo,m,n,scheme)
+       call ti(ua,va,za,ub,vb,zb,ua,va,za,rm,f,d,dt,zo,m,n,scheme)
        nb=nb+1
   20  continue
 
@@ -84,15 +93,15 @@ c   边界平滑子程序
       call ssbp(va,w,s,m,n)
 
 c   前差积分半步
-      call ti(ua,va,za,ua,va,za,ub,vb,zb,rm,f,d,c1,zo,m,n)
+      call ti(ua,va,za,ua,va,za,ub,vb,zb,rm,f,d,c1,zo,m,n,scheme)
 c   中央差积分半步
-      call ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,dt,zo,m,n)
+      call ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,dt,zo,m,n,scheme)
       nb=nb+1
 c  数组传送子程序
       call ta(ub,vb,zb,uc,vc,zc,m,n)
 c  中央差积分一步,共积分11小时
       do 30 nn=1,66
-       call ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,c2,zo,m,n)
+       call ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,c2,zo,m,n,scheme)
        nb=nb+1
 c  打印积分步数,na大循环步,nb小循环步
        call pv(na,nb)
@@ -242,37 +251,94 @@ c     右上角
       return
       end
 
+
 c     time integrations
-      subroutine ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,dt,zo,m,n)
+c     新版子程序 ti 增加参数 scheme，取值：
+c       scheme = 1  欧拉后差格式
+c       scheme = 2  中央差格式
+c       scheme = 3  欧拉后差与中央差平均格式
+      subroutine ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,dt,zo,m,n, scheme)
+      integer, intent(in) :: m, n, scheme
       dimension ua(m,n),va(m,n),za(m,n),ub(m,n),vb(m,n),zb(m,n),
-     *		uc(m,n),vc(m,n),zc(m,n),rm(m,n),f(m,n)
-       c=0.25/d
-       m1=m-1
-       n1=n-1
-      do 10 i=2,m1
-      do 10 j=2,n1
-      e=-c*rm(i,j)*((ub(i+1,j)+ub(i,j))*(ub(i+1,j)-ub(i,j))
-     *		   +(ub(i,j)+ub(i-1,j))*(ub(i,j)-ub(i-1,j))
-     *		   +(vb(I,j-1)+vb(i,j))*(ub(i,j)-ub(i,j-1))
-     *		   +(vb(I,j)+vb(i,j+1))*(ub(i,j+1)-ub(i,j))
-     *		   +19.6*(zb(i+1,j)-zb(i-1,j)))+f(i,j)*vb(i,j)
-      uc(i,j)=ua(i,j)+e*dt
-      g=-c*rm(i,j)*((ub(I+1,j)+ub(i,j))*(vb(i+1,j)-vb(i,j))
-     *		   +(ub(I,j)+ub(i-1,j))*(vb(i,j)-vb(i-1,j))
-     *		   +(vb(I,j-1)+vb(i,j))*(vb(i,j)-vb(i,j-1))
-     *		   +(vb(I,j)+vb(i,j+1))*(vb(i,j+1)-vb(i,j))
-     *		   +19.6*(zb(i,j+1)-zb(i,j-1)))-f(i,j)*ub(i,j)
-  10  vc(i,j)=va(i,j)+g*dt
-      do 20 i=2,m1
-      do 20 j=2,n1
-      h=-c*rm(i,j)*((ub(I+1,j)+ub(i,j))*(zb(i+1,j)-zb(i,j))
-     *		   +(ub(I,j)+ub(i-1,j))*(zb(i,j)-zb(i-1,j))
-     *		   +(vb(I,j-1)+vb(i,j))*(zb(i,j)-zb(i,j-1))
-     *		   +(vb(I,j)+vb(i,j+1))*(zb(i,j+1)-zb(i,j))
-     *	+2.0*(zb(i,j)-zo)*(ub(i+1,j)-ub(i-1,j)+vb(i,j+1)-vb(i,j-1)))
-  20  zc(i,j)=za(i,j)+h*dt
+     *          uc(m,n),vc(m,n),zc(m,n),rm(m,n),f(m,n)
+      c = 0.25/d
+      m1 = m-1
+      n1 = n-1
+      do 10 i=2, m1
+         do 10 j=2, n1
+         select case (scheme)
+         case (1)
+c          欧拉后差格式：采用后向（单侧）差分近似
+            e = -c*rm(i,j)*(((ub(i,j)-ub(i,j-1)) + (ub(i,j)-ub(i-1,j)))/1.0 
+     *        + 19.6*(zb(i,j)-zb(i,j-1))) + f(i,j)*vb(i,j)
+            uc(i,j) = ua(i,j) + e*dt
+            g = -c*rm(i,j)*(((vb(i,j)-vb(i-1,j)) + (vb(i,j)-vb(i,j-1)))/1.0 
+     *        + 19.6*(zb(i,j)-zb(i,j-1))) - f(i,j)*ub(i,j)
+            vc(i,j) = va(i,j) + g*dt
+            h = -c*rm(i,j)*((zb(i,j)-zb(i,j-1))+(zb(i,j)-zb(i-1,j))) + 2.0*(zb(i,j)-zo)*((ub(i,j)-ub(i-1,j)) + (vb(i,j)-vb(i,j-1)))
+            zc(i,j) = za(i,j) + h*dt
+
+         case (2)
+c          中央差格式：采用原程序中的中央差分公式
+            e = -c*rm(i,j)*((ub(i+1,j)+ub(i,j))*(ub(i+1,j)-ub(i,j)) 
+     *         + (ub(i,j)+ub(i-1,j))*(ub(i,j)-ub(i-1,j)) 
+     *         + (vb(i,j-1)+vb(i,j))*(ub(i,j)-ub(i,j-1)) 
+     *         + (vb(i,j)+vb(i,j+1))*(ub(i,j+1)-ub(i,j)) 
+     *         + 19.6*(zb(i+1,j)-zb(i-1,j))) + f(i,j)*vb(i,j)
+            uc(i,j) = ua(i,j) + e*dt
+            g = -c*rm(i,j)*((ub(i+1,j)+ub(i,j))*(vb(i+1,j)-vb(i,j)) 
+     *         + (ub(i,j)+ub(i-1,j))*(vb(i,j)-vb(i-1,j)) 
+     *         + (vb(i,j-1)+vb(i,j))*(vb(i,j)-vb(i,j-1)) 
+     *         + (vb(i,j)+vb(i,j+1))*(vb(i,j+1)-vb(i,j)) 
+     *         + 19.6*(zb(i,j+1)-zb(i,j-1))) - f(i,j)*ub(i,j)
+            vc(i,j) = va(i,j) + g*dt
+            h = -c*rm(i,j)*((ub(i+1,j)+ub(i,j))*(zb(i+1,j)-zb(i,j)) 
+     *         + (ub(i,j)+ub(i-1,j))*(zb(i,j)-zb(i-1,j)) 
+     *         + (vb(i,j-1)+vb(i,j))*(zb(i,j)-zb(i,j-1)) 
+     *         + (vb(i,j)+vb(i,j+1))*(zb(i,j+1)-zb(i,j)) 
+     *         + 2.0*(zb(i,j)-zo)*((ub(i+1,j)-ub(i-1,j))
+     *         +(vb(i,j+1)-vb(i,j-1))))
+            zc(i,j) = za(i,j) + h*dt
+
+         case (3)
+c          结合格式：计算前两种积分格式的倾向，然后取平均
+            e1 = -c*rm(i,j)*(((ub(i,j)-ub(i,j-1)) + (ub(i,j)-ub(i-1,j)))/1.0 
+     *         + 19.6*(zb(i,j)-zb(i,j-1))) + f(i,j)*vb(i,j)
+            g1 = -c*rm(i,j)*(((vb(i,j)-vb(i-1,j)) + (vb(i,j)-vb(i,j-1)))/1.0 
+     *         + 19.6*(zb(i,j)-zb(i,j-1))) - f(i,j)*ub(i,j)
+            h1 = -c*rm(i,j)*(((zb(i,j)-zb(i,j-1)) + (zb(i,j)-zb(i-1,j)))/1.0 
+     *         + 2.0*(zb(i,j)-zo)*((ub(i,j)-ub(i-1,j))+
+     *         (vb(i,j)-vb(i,j-1)))/1.0)
+            e2 = -c*rm(i,j)*((ub(i+1,j)+ub(i,j))*(ub(i+1,j)-ub(i,j)) 
+     *         + (ub(i,j)+ub(i-1,j))*(ub(i,j)-ub(i-1,j)) 
+     *         + (vb(i,j-1)+vb(i,j))*(ub(i,j)-ub(i,j-1)) 
+     *         + (vb(i,j)+vb(i,j+1))*(ub(i,j+1)-ub(i,j)) 
+     *         + 19.6*(zb(i+1,j)-zb(i-1,j))) + f(i,j)*vb(i,j)
+            g2 = -c*rm(i,j)*((ub(i+1,j)+ub(i,j))*(vb(i+1,j)-vb(i,j)) 
+     *         + (ub(i,j)+ub(i-1,j))*(vb(i,j)-vb(i-1,j)) 
+     *         + (vb(i,j-1)+vb(i,j))*(vb(i,j)-vb(i,j-1)) 
+     *         + (vb(i,j)+vb(i,j+1))*(vb(i,j+1)-vb(i,j)) 
+     *         + 19.6*(zb(i,j+1)-zb(i,j-1))) - f(i,j)*ub(i,j)
+            h2 = -c*rm(i,j)*((ub(i+1,j)+ub(i,j))*(zb(i+1,j)-zb(i,j)) 
+     *         + (ub(i,j)+ub(i-1,j))*(zb(i,j)-zb(i-1,j)) 
+     *         + (vb(i,j-1)+vb(i,j))*(zb(i,j)-zb(i,j-1)) 
+     *         + (vb(i,j)+vb(i,j+1))*(zb(i,j+1)-zb(i,j)) 
+     *         + 2.0*(zb(i,j)-zo)*((ub(i+1,j)-ub(i-1,j))
+     *         +(vb(i,j+1)-vb(i,j-1))))
+c    注意到如果句子太长会报错
+c    所以用了很多换行*
+            e = 0.5*(e1+e2)
+            g = 0.5*(g1+g2)
+            h = 0.5*(h1+h2)
+            uc(i,j) = ua(i,j) + e*dt
+            vc(i,j) = va(i,j) + g*dt
+            zc(i,j) = za(i,j) + h*dt
+         end select
+10       continue
       return
       end
+
+
 
 c     time smoothimg
       subroutine ts(ua,ub,uc,va,vb,vc,za,zb,zc,s,m,n)
